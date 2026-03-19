@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import { useRequireAuth } from '@/context/AuthContext';
 import {
-  getTripById, getExpensesForTrip, getUsers, saveTrips, getTrips, deleteTrip, removeMemberFromTrip
+  getTripById, getExpensesForTrip, getUsers, saveTrip, deleteTrip, removeMemberFromTrip
 } from '@/lib/storage';
 import { Trip, User, Expense } from '@/lib/types';
 import { formatCurrency } from '@/lib/calculations';
@@ -22,31 +22,39 @@ export default function TripDetailPage() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
 
   useEffect(() => {
+    let mounted = true;
     if (!session) return;
-    const t = getTripById(tripId);
-    if (!t) { router.replace('/dashboard'); return; }
-    setTrip(t);
-    const allUsers = getUsers();
-    setMembers(allUsers.filter((u) => t.memberIds.includes(u.id)));
-    setExpenses(getExpensesForTrip(tripId));
+    (async () => {
+      const t = await getTripById(tripId);
+      if (!t) { router.replace('/dashboard'); return; }
+      if (!mounted) return;
+      setTrip(t);
+      const [allUsers, exps] = await Promise.all([
+        getUsers(),
+        getExpensesForTrip(tripId)
+      ]);
+      if (!mounted) return;
+      setMembers(allUsers.filter((u) => t.memberIds.includes(u.id)));
+      setExpenses(exps);
+    })();
+    return () => { mounted = false; };
   }, [session, tripId]);
 
-  const toggleStatus = () => {
+  const toggleStatus = async () => {
     if (!trip) return;
     const updated = { ...trip, status: trip.status === 'active' ? 'completed' as const : 'active' as const };
-    const all = getTrips().map((t) => (t.id === tripId ? updated : t));
-    saveTrips(all);
+    await saveTrip(updated);
     setTrip(updated);
   };
 
-  const handleDeleteTrip = () => {
+  const handleDeleteTrip = async () => {
     if (confirm('Are you sure you want to delete this trip fully? This cannot be undone.')) {
-      deleteTrip(tripId);
+      await deleteTrip(tripId);
       router.replace('/dashboard');
     }
   };
 
-  const handleRemoveMember = (m: User) => {
+  const handleRemoveMember = async (m: User) => {
     const isPayer = expenses.some(e => e.paidBy === m.id);
     const isSplit = expenses.some(e => e.splitAmong.includes(m.id));
     if (isPayer || isSplit) {
@@ -54,7 +62,7 @@ export default function TripDetailPage() {
       return;
     }
     if (confirm(`Remove ${m.name} from the trip?`)) {
-      removeMemberFromTrip(tripId, m.id);
+      await removeMemberFromTrip(tripId, m.id);
       setMembers(members.filter(member => member.id !== m.id));
     }
   };

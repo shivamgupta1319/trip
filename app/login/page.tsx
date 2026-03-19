@@ -46,7 +46,7 @@ export default function LoginPage() {
     if (pinStr.length !== 4) return setError('Enter your 4-digit PIN.');
 
     setLoading(true);
-    const user = getUserByName(trimmedName);
+    const user = await getUserByName(trimmedName);
     if (!user) {
       setError('No account found. Please sign up first.');
       setLoading(false);

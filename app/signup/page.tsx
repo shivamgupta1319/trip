@@ -4,7 +4,7 @@ import { useState, useRef, KeyboardEvent } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { getUsers, saveUsers, getUserByName, generateId } from '@/lib/storage';
+import { getUsers, saveUser, getUserByName, generateId } from '@/lib/storage';
 
 export default function SignupPage() {
   const [name, setName] = useState('');
@@ -66,7 +66,7 @@ export default function SignupPage() {
     if (pinStr !== confirmStr) return setError('PINs do not match.');
 
     setLoading(true);
-    const existing = getUserByName(trimmedName);
+    const existing = await getUserByName(trimmedName);
     if (existing) {
       setError('A user with this name already exists. Try logging in.');
       setLoading(false);
@@ -80,8 +80,8 @@ export default function SignupPage() {
       createdAt: new Date().toISOString(),
     };
 
-    const users = getUsers();
-    saveUsers([...users, newUser]);
+    const users = await getUsers();
+    await saveUser(newUser);
     login({ userId: newUser.id, name: newUser.name });
     router.replace('/dashboard');
   };

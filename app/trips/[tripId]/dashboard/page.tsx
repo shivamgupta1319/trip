@@ -20,15 +20,25 @@ export default function TripDashboardPage() {
   const [summary, setSummary] = useState<ReturnType<typeof calculateTripSummary> | null>(null);
 
   useEffect(() => {
+    let mounted = true;
     if (!session) return;
-    const t = getTripById(tripId);
-    if (!t) { router.replace('/dashboard'); return; }
-    setTrip(t);
-    const allUsers = getUsers();
-    const mems = allUsers.filter((u) => t.memberIds.includes(u.id));
-    setMembers(mems);
-    const expenses = getExpensesForTrip(tripId);
-    setSummary(calculateTripSummary(expenses, mems));
+    (async () => {
+      const t = await getTripById(tripId);
+      if (!t) { router.replace('/dashboard'); return; }
+      if (!mounted) return;
+      setTrip(t);
+
+      const [allUsers, expenses] = await Promise.all([
+        getUsers(),
+        getExpensesForTrip(tripId)
+      ]);
+      
+      if (!mounted) return;
+      const mems = allUsers.filter((u) => t.memberIds.includes(u.id));
+      setMembers(mems);
+      setSummary(calculateTripSummary(expenses, mems));
+    })();
+    return () => { mounted = false; };
   }, [session, tripId]);
 
   if (loading || !trip || !summary) return <div className="loading-screen"><div className="spinner" /></div>;

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import { useRequireAuth } from '@/context/AuthContext';
-import { getTrips, saveTrips, generateId } from '@/lib/storage';
+import { saveTrip, generateId } from '@/lib/storage';
 
 export default function NewTripPage() {
   const { session, loading } = useRequireAuth();
@@ -18,7 +18,7 @@ export default function NewTripPage() {
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim()) return setError('Trip name is required.');
     setSubmitting(true);
@@ -34,8 +34,7 @@ export default function NewTripPage() {
       createdAt: new Date().toISOString(),
     };
 
-    const trips = getTrips();
-    saveTrips([...trips, newTrip]);
+    await saveTrip(newTrip);
     router.push(`/trips/${newTrip.id}`);
   };
 

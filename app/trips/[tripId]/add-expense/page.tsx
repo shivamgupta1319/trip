@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import { useRequireAuth } from '@/context/AuthContext';
 import {
-  getTripById, getExpenses, saveExpenses, getUsers, generateId
+  getTripById, getExpenses, saveExpense, getUsers, generateId
 } from '@/lib/storage';
 import { Trip, User, ExpenseCategory } from '@/lib/types';
 import { CATEGORY_LABELS, CATEGORY_ICONS } from '@/lib/calculations';
@@ -34,15 +34,21 @@ export default function AddExpensePage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    let mounted = true;
     if (!session) return;
-    const t = getTripById(tripId);
-    if (!t) { router.replace('/dashboard'); return; }
-    setTrip(t);
-    const allUsers = getUsers();
-    const mems = allUsers.filter((u) => t.memberIds.includes(u.id));
-    setMembers(mems);
-    setForm((f) => ({ ...f, paidBy: session.userId }));
-    setSelectedSplit(mems.map((m) => m.id));
+    (async () => {
+      const t = await getTripById(tripId);
+      if (!t) { router.replace('/dashboard'); return; }
+      if (!mounted) return;
+      setTrip(t);
+      const allUsers = await getUsers();
+      if (!mounted) return;
+      const mems = allUsers.filter((u) => t.memberIds.includes(u.id));
+      setMembers(mems);
+      setForm((f) => ({ ...f, paidBy: session.userId }));
+      setSelectedSplit(mems.map((m) => m.id));
+    })();
+    return () => { mounted = false; };
   }, [session, tripId]);
 
   const toggleMember = (uid: string) => {
@@ -51,7 +57,7 @@ export default function AddExpensePage() {
     );
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     const amt = parseFloat(form.amount);
@@ -72,8 +78,7 @@ export default function AddExpensePage() {
       createdAt: new Date().toISOString(),
     };
 
-    const all = getExpenses();
-    saveExpenses([...all, newExpense]);
+    await saveExpense(newExpense);
     router.push(`/trips/${tripId}/expenses`);
   };
 

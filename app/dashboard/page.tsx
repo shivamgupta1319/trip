@@ -6,18 +6,38 @@ import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import { useRequireAuth } from '@/context/AuthContext';
 import { getTripsForUser } from '@/lib/storage';
-import { Trip } from '@/lib/types';
+import { Trip, User, Expense } from '@/lib/types';
 import { formatCurrency, calculateTripSummary } from '@/lib/calculations';
 import { getExpensesForTrip, getUsers } from '@/lib/storage';
 
 export default function DashboardPage() {
   const { session, loading } = useRequireAuth();
   const [trips, setTrips] = useState<Trip[]>([]);
+  const [expensesMap, setExpensesMap] = useState<Record<string, Expense[]>>({});
+  const [membersMap, setMembersMap] = useState<Record<string, User[]>>({});
 
   useEffect(() => {
+    let mounted = true;
     if (session) {
-      setTrips(getTripsForUser(session.userId));
+      (async () => {
+        const userTrips = await getTripsForUser(session.userId);
+        if (!mounted) return;
+        setTrips(userTrips);
+
+        const allUsers = await getUsers();
+        const eMap: Record<string, Expense[]> = {};
+        const mMap: Record<string, User[]> = {};
+        for (const t of userTrips) {
+          eMap[t.id] = await getExpensesForTrip(t.id);
+          mMap[t.id] = allUsers.filter(u => t.memberIds.includes(u.id));
+        }
+        if (mounted) {
+          setExpensesMap(eMap);
+          setMembersMap(mMap);
+        }
+      })();
     }
+    return () => { mounted = false; };
   }, [session]);
 
   if (loading) {
@@ -44,7 +64,7 @@ export default function DashboardPage() {
             </Link>
           </div>
 
-          {trips.length === 0 ? (
+          {(!trips || trips.length === 0) ? (
             <div className="empty-state">
               <div className="empty-state__icon">🧳</div>
               <div className="empty-state__title">No trips yet</div>
@@ -55,10 +75,9 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="stack">
-              {trips.map((trip) => {
-                const expenses = getExpensesForTrip(trip.id);
-                const allUsers = getUsers();
-                const members = allUsers.filter((u) => trip.memberIds.includes(u.id));
+              {(trips || []).map((trip) => {
+                const expenses = expensesMap[trip.id] || [];
+                const members = membersMap[trip.id] || [];
                 const total = expenses.reduce((s, e) => s + e.amount, 0);
                 return (
                   <Link key={trip.id} href={`/trips/${trip.id}`} className="list-item">

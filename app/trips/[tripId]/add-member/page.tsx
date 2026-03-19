@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import { useRequireAuth } from '@/context/AuthContext';
 import {
-  getTripById, getUsers, saveUsers, getTrips, saveTrips, generateId
+  getTripById, getUsers, saveUser, getTrips, saveTrip, generateId
 } from '@/lib/storage';
 import { Trip, User } from '@/lib/types';
 
@@ -25,18 +25,24 @@ export default function AddMemberPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    let mounted = true;
     if (!session) return;
-    const t = getTripById(tripId);
-    if (!t) { router.replace('/dashboard'); return; }
-    setTrip(t);
-    const allUsers = getUsers();
-    setMembers(allUsers.filter((u) => t.memberIds.includes(u.id)));
+    (async () => {
+      const t = await getTripById(tripId);
+      if (!t) { router.replace('/dashboard'); return; }
+      if (!mounted) return;
+      setTrip(t);
+      const allUsers = await getUsers();
+      if (!mounted) return;
+      setMembers(allUsers.filter((u) => t.memberIds.includes(u.id)));
+    })();
+    return () => { mounted = false; };
   }, [session, tripId]);
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(''); setSuccess('');
-    const allUsers = getUsers();
+    const allUsers = await getUsers();
     const match = allUsers.find(
       (u) => u.name.toLowerCase() === query.trim().toLowerCase()
     );
@@ -44,25 +50,25 @@ export default function AddMemberPage() {
     setSearched(true);
   };
 
-  const addExistingMember = () => {
+  const addExistingMember = async () => {
     if (!found || !trip) return;
     if (trip.memberIds.includes(found.id)) {
       return setError(`${found.name} is already a member.`);
     }
     const updatedTrip = { ...trip, memberIds: [...trip.memberIds, found.id] };
-    const allTrips = getTrips().map((t) => (t.id === tripId ? updatedTrip : t));
-    saveTrips(allTrips);
+    await saveTrip(updatedTrip);
     setTrip(updatedTrip);
     setMembers([...members, found]);
     setSuccess(`${found.name} added to the trip! 🎉`);
     setQuery(''); setFound(undefined); setSearched(false);
   };
 
-  const createAndAdd = () => {
+  const createAndAdd = async () => {
     if (!trip) return;
     const name = query.trim();
     if (!name) return setError('Please enter a name.');
-    const existing = getUsers().find((u) => u.name.toLowerCase() === name.toLowerCase());
+    const allUsers = await getUsers();
+    const existing = allUsers.find((u) => u.name.toLowerCase() === name.toLowerCase());
     if (existing) return setError('A user with this name already exists.');
 
     const newUser: User = {
@@ -71,12 +77,10 @@ export default function AddMemberPage() {
       pin: '1234',
       createdAt: new Date().toISOString(),
     };
-    const allUsers = getUsers();
-    saveUsers([...allUsers, newUser]);
+    await saveUser(newUser);
 
     const updatedTrip = { ...trip, memberIds: [...trip.memberIds, newUser.id] };
-    const allTrips = getTrips().map((t) => (t.id === tripId ? updatedTrip : t));
-    saveTrips(allTrips);
+    await saveTrip(updatedTrip);
     setTrip(updatedTrip);
     setMembers([...members, newUser]);
     setSuccess(`Created "${name}" with default PIN 1234 and added to trip! 🎉 They can change their PIN after logging in.`);

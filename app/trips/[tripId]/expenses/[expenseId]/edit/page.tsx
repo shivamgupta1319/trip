@@ -35,33 +35,39 @@ export default function EditExpensePage() {
   const [expense, setExpense] = useState<any>(null);
 
   useEffect(() => {
+    let mounted = true;
     if (!session) return;
-    const t = getTripById(tripId);
-    if (!t) { router.replace('/dashboard'); return; }
-    
-    const exp = getExpenseById(expenseId);
-    if (!exp || exp.tripId !== tripId) { router.replace(`/trips/${tripId}/expenses`); return; }
-    
-    setTrip(t);
-    setExpense(exp);
-    const allUsers = getUsers();
-    const mems = allUsers.filter((u) => t.memberIds.includes(u.id));
-    setMembers(mems);
-    
-    setForm({
-      title: exp.title,
-      amount: exp.amount.toString(),
-      category: exp.category,
-      paidBy: exp.paidBy,
-    });
-    
-    if (exp.splitAmong.length === mems.length) {
-      setSplitAll(true);
-      setSelectedSplit(mems.map(m => m.id));
-    } else {
-      setSplitAll(false);
-      setSelectedSplit(exp.splitAmong);
-    }
+    (async () => {
+      const t = await getTripById(tripId);
+      if (!t) { router.replace('/dashboard'); return; }
+      const exp = await getExpenseById(expenseId);
+      if (!exp || exp.tripId !== tripId) { router.replace(`/trips/${tripId}/expenses`); return; }
+      if (!mounted) return;
+      
+      setTrip(t);
+      setExpense(exp);
+      const allUsers = await getUsers();
+      if (!mounted) return;
+      
+      const mems = allUsers.filter((u) => t.memberIds.includes(u.id));
+      setMembers(mems);
+      
+      setForm({
+        title: exp.title,
+        amount: exp.amount.toString(),
+        category: exp.category,
+        paidBy: exp.paidBy,
+      });
+      
+      if (exp.splitAmong.length === mems.length) {
+        setSplitAll(true);
+        setSelectedSplit(mems.map(m => m.id));
+      } else {
+        setSplitAll(false);
+        setSelectedSplit(exp.splitAmong);
+      }
+    })();
+    return () => { mounted = false; };
   }, [session, tripId, expenseId, router]);
 
   const toggleMember = (uid: string) => {
@@ -70,7 +76,7 @@ export default function EditExpensePage() {
     );
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     const amt = parseFloat(form.amount);
@@ -89,7 +95,7 @@ export default function EditExpensePage() {
       splitAmong: split,
     };
 
-    updateExpense(updatedExpense);
+    await updateExpense(updatedExpense);
     router.push(`/trips/${tripId}/expenses`);
   };
 

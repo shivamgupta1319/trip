@@ -4,7 +4,7 @@ import { useState, useRef, KeyboardEvent } from 'react';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import { useRequireAuth } from '@/context/AuthContext';
-import { getUsers, saveUsers } from '@/lib/storage';
+import { getUsers, saveUser } from '@/lib/storage';
 
 export default function SettingsPage() {
   const { session, loading } = useRequireAuth();
@@ -61,7 +61,7 @@ export default function SettingsPage() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccess('');
@@ -73,13 +73,13 @@ export default function SettingsPage() {
       return setError('All PIN fields must be 4 digits.');
     if (nw !== conf) return setError('New PINs do not match.');
 
-    const users = getUsers();
+    const users = await getUsers();
     const idx = users.findIndex((u) => u.id === session!.userId);
     if (idx === -1) return setError('User not found.');
     if (users[idx].pin !== old) return setError('Current PIN is incorrect.');
 
     users[idx] = { ...users[idx], pin: nw };
-    saveUsers(users);
+    await saveUser(users[idx]);
     setOldPin(['', '', '', '']);
     setNewPin(['', '', '', '']);
     setConfirmPin(['', '', '', '']);

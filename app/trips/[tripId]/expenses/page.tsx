@@ -20,21 +20,29 @@ export default function ExpensesPage() {
   const [members, setMembers] = useState<User[]>([]);
 
   useEffect(() => {
+    let mounted = true;
     if (!session) return;
-    const t = getTripById(tripId);
-    if (!t) { router.replace('/dashboard'); return; }
-    setTrip(t);
-    const allUsers = getUsers();
-    setMembers(allUsers.filter((u) => t.memberIds.includes(u.id)));
-    const exps = getExpensesForTrip(tripId);
-    setExpenses([...exps].sort((a, b) =>
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    ));
+    (async () => {
+      const t = await getTripById(tripId);
+      if (!t) { router.replace('/dashboard'); return; }
+      if (!mounted) return;
+      setTrip(t);
+      const [allUsers, exps] = await Promise.all([
+        getUsers(),
+        getExpensesForTrip(tripId)
+      ]);
+      if (!mounted) return;
+      setMembers(allUsers.filter((u) => t.memberIds.includes(u.id)));
+      setExpenses(exps.sort((a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      ));
+    })();
+    return () => { mounted = false; };
   }, [session, tripId]);
 
-  const handleDelete = (id: string, title: string) => {
+  const handleDelete = async (id: string, title: string) => {
     if (confirm(`Delete the expense "${title}"?`)) {
-      deleteExpense(id);
+      await deleteExpense(id);
       setExpenses(expenses.filter(e => e.id !== id));
     }
   };
