@@ -60,6 +60,21 @@ export function getTripsForUser(userId: string): Trip[] {
   return getTrips().filter((t) => t.memberIds.includes(userId));
 }
 
+export function deleteTrip(tripId: string): void {
+  const trips = getTrips().filter((t) => t.id !== tripId);
+  saveTrips(trips);
+  const expenses = getExpenses().filter((e) => e.tripId !== tripId);
+  saveExpenses(expenses);
+}
+
+export function removeMemberFromTrip(tripId: string, memberId: string): void {
+  const trip = getTripById(tripId);
+  if (!trip) return;
+  trip.memberIds = trip.memberIds.filter((id) => id !== memberId);
+  const trips = getTrips().map((t) => (t.id === tripId ? trip : t));
+  saveTrips(trips);
+}
+
 // ── Expenses ───────────────────────────────────────────
 export function getExpenses(): Expense[] {
   return get<Expense>(KEYS.EXPENSES);
@@ -71,6 +86,20 @@ export function saveExpenses(expenses: Expense[]): void {
 
 export function getExpensesForTrip(tripId: string): Expense[] {
   return getExpenses().filter((e) => e.tripId === tripId);
+}
+
+export function getExpenseById(expenseId: string): Expense | undefined {
+  return getExpenses().find((e) => e.id === expenseId);
+}
+
+export function updateExpense(expense: Expense): void {
+  const exps = getExpenses().map((e) => (e.id === expense.id ? expense : e));
+  saveExpenses(exps);
+}
+
+export function deleteExpense(expenseId: string): void {
+  const exps = getExpenses().filter((e) => e.id !== expenseId);
+  saveExpenses(exps);
 }
 
 // ── Session ────────────────────────────────────────────

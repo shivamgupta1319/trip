@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import { useRequireAuth } from '@/context/AuthContext';
-import { getTripById, getExpensesForTrip, getUsers } from '@/lib/storage';
+import { getTripById, getExpensesForTrip, getUsers, deleteExpense } from '@/lib/storage';
 import { Trip, User, Expense } from '@/lib/types';
 import { formatCurrency, CATEGORY_ICONS, CATEGORY_LABELS } from '@/lib/calculations';
 
@@ -31,6 +31,13 @@ export default function ExpensesPage() {
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     ));
   }, [session, tripId]);
+
+  const handleDelete = (id: string, title: string) => {
+    if (confirm(`Delete the expense "${title}"?`)) {
+      deleteExpense(id);
+      setExpenses(expenses.filter(e => e.id !== id));
+    }
+  };
 
   if (loading || !trip) return <div className="loading-screen"><div className="spinner" /></div>;
   if (!session) return null;
@@ -85,12 +92,26 @@ export default function ExpensesPage() {
                         Split: {splitNames.length === members.length ? 'Everyone' : splitNames.join(', ')}
                       </div>
                     </div>
-                    <div className="list-item__right">
+                    <div className="list-item__right" style={{ textAlign: 'right' }}>
                       <div style={{ fontWeight: 700, color: 'var(--accent)', fontSize: '1rem' }}>
                         {formatCurrency(exp.amount)}
                       </div>
-                      <div style={{ fontSize: '0.73rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                      <div style={{ fontSize: '0.73rem', color: 'var(--text-muted)', marginTop: 2, marginBottom: 8 }}>
                         {new Date(exp.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                      </div>
+                      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                        <Link 
+                          href={`/trips/${tripId}/expenses/${exp.id}/edit`}
+                          style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}
+                        >
+                          Edit
+                        </Link>
+                        <button 
+                          onClick={() => handleDelete(exp.id, exp.title)}
+                          style={{ background: 'transparent', border: 'none', color: 'var(--danger)', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}
+                        >
+                          Delete
+                        </button>
                       </div>
                     </div>
                   </div>

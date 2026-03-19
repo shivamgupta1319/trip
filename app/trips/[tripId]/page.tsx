@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import { useRequireAuth } from '@/context/AuthContext';
 import {
-  getTripById, getExpensesForTrip, getUsers, saveTrips, getTrips
+  getTripById, getExpensesForTrip, getUsers, saveTrips, getTrips, deleteTrip, removeMemberFromTrip
 } from '@/lib/storage';
 import { Trip, User, Expense } from '@/lib/types';
 import { formatCurrency } from '@/lib/calculations';
@@ -37,6 +37,26 @@ export default function TripDetailPage() {
     const all = getTrips().map((t) => (t.id === tripId ? updated : t));
     saveTrips(all);
     setTrip(updated);
+  };
+
+  const handleDeleteTrip = () => {
+    if (confirm('Are you sure you want to delete this trip fully? This cannot be undone.')) {
+      deleteTrip(tripId);
+      router.replace('/dashboard');
+    }
+  };
+
+  const handleRemoveMember = (m: User) => {
+    const isPayer = expenses.some(e => e.paidBy === m.id);
+    const isSplit = expenses.some(e => e.splitAmong.includes(m.id));
+    if (isPayer || isSplit) {
+      alert(`Cannot remove ${m.name} because they are part of existing expenses.`);
+      return;
+    }
+    if (confirm(`Remove ${m.name} from the trip?`)) {
+      removeMemberFromTrip(tripId, m.id);
+      setMembers(members.filter(member => member.id !== m.id));
+    }
   };
 
   if (loading || !trip) return <div className="loading-screen"><div className="spinner" /></div>;
@@ -133,6 +153,14 @@ export default function TripDetailPage() {
                 {m.id === trip.createdBy && (
                   <span style={{ fontSize: '0.7rem', color: 'var(--accent)' }}>creator</span>
                 )}
+                {m.id !== trip.createdBy && (
+                  <button 
+                    onClick={() => handleRemoveMember(m)}
+                    style={{ background: 'transparent', border: 'none', color: 'var(--danger)', fontSize: '0.75rem', cursor: 'pointer', marginLeft: 6, fontWeight: 600 }}
+                  >
+                    ×
+                  </button>
+                )}
               </div>
             ))}
           </div>
@@ -172,14 +200,20 @@ export default function TripDetailPage() {
             </div>
           )}
 
-          {/* Trip status toggle */}
-          <div style={{ marginTop: 32 }}>
+          {/* Trip status toggle & Delete */ }
+          <div style={{ marginTop: 32, display: 'flex', gap: 12 }}>
             <button
               onClick={toggleStatus}
               className={`btn btn--sm ${trip.status === 'active' ? 'btn--ghost' : 'btn--ghost'}`}
               style={{ opacity: 0.7 }}
             >
-              {trip.status === 'active' ? '✅ Mark as Completed' : '🔄 Reopen Trip'}
+              {trip.status === 'active' ? '✅ Mark completed' : '🔄 Reopen trip'}
+            </button>
+            <button
+              onClick={handleDeleteTrip}
+              className="btn btn--sm btn--danger"
+            >
+              🗑️ Delete Trip
             </button>
           </div>
         </div>
