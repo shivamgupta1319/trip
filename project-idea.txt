@@ -1,0 +1,14 @@
+i am thing of creating a simple trip managemnet app using react or next which one is better and deploy it on vercel
+use typescript and for storing the details or data use a data folder and store the data in json because i dont want any db or server and keep in mind the UI is modern and simple and responsive and user friendly
+
+features:
+- simple signup and login page via name and pin (4 digit pin)
+- the user is allow to create a trip and in trip user is allowed to add members
+- the members add if they are not a user can just create a new user with default pin and then that user is allow to change his pin (default pin is 1234)
+- now each user can see all the trips in which thet are part 
+- in each trip all the members are able to see all the expense
+- each expense is added by a member and the expense is for a particular members or for all the member.
+- so when user add any expense then user is allowed to select all or some members for any expense.
+- there is a dash-board for each trip where the trip members can see total expense and per person expense and who paid how much and who owes how much
+- etc. you can also suggest some features if you want which i am forget to add and are important for a trip management app
+- my only concern is to keep the app simple and easy or quick to use and also modern and beautiful UI
