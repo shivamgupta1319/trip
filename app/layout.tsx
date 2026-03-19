@@ -12,6 +12,22 @@ export const metadata: Metadata = {
   title: 'TripSplit — Split expenses with friends',
   description:
     'Manage trip expenses, split bills, and settle debts easily with your travel group.',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'TripSplit',
+  },
+  formatDetection: {
+    telephone: false,
+  },
+};
+
+export const viewport = {
+  themeColor: '#0f0f13',
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
 };
 
 export default function RootLayout({

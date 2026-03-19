@@ -1,0 +1,19 @@
+{
+  "name": "TripSplit - Trip Expense Manager",
+  "short_name": "TripSplit",
+  "description": "Easily manage trip expenses and settle up with friends.",
+  "theme_color": "#0f0f13",
+  "background_color": "#0f0f13",
+  "display": "standalone",
+  "orientation": "portrait",
+  "scope": "/",
+  "start_url": "/",
+  "icons": [
+    {
+      "src": "/globe.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
