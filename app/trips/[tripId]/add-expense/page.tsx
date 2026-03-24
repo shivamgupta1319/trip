@@ -176,17 +176,36 @@ export default function AddExpensePage() {
                   </button>
                 </div>
                 {!splitAll && (
-                  <div className="chip-group">
-                    {members.map((m) => (
-                      <button
-                        type="button"
-                        key={m.id}
-                        className={`chip ${selectedSplit.includes(m.id) ? 'chip--selected' : ''}`}
-                        onClick={() => toggleMember(m.id)}
-                      >
-                        {m.name}
-                      </button>
-                    ))}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {members.map((m) => {
+                      const isSelected = selectedSplit.includes(m.id);
+                      return (
+                        <button
+                          type="button"
+                          key={m.id}
+                          style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                            padding: '12px 16px', borderRadius: 12, border: '1px solid',
+                            borderColor: isSelected ? 'var(--accent)' : 'var(--border)',
+                            background: isSelected ? 'var(--bg-elevated)' : 'transparent',
+                            color: 'var(--text-main)', cursor: 'pointer', width: '100%', textAlign: 'left',
+                            transition: 'all 0.2s',
+                          }}
+                          onClick={() => toggleMember(m.id)}
+                        >
+                          <span style={{ fontWeight: isSelected ? 600 : 400 }}>{m.name}</span>
+                          <span style={{ 
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            width: 24, height: 24, borderRadius: '50%',
+                            background: isSelected ? 'var(--danger)' : 'var(--bg-card)',
+                            color: isSelected ? '#fff' : 'var(--text-muted)',
+                            fontSize: '1.2rem', lineHeight: 1
+                          }}>
+                            {isSelected ? '−' : '+'}
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
                 {splitAll && (

@@ -9,7 +9,7 @@ import {
   getTripById, getExpensesForTrip, getUsers, saveTrip, deleteTrip, removeMemberFromTrip
 } from '@/lib/storage';
 import { Trip, User, Expense } from '@/lib/types';
-import { formatCurrency } from '@/lib/calculations';
+import { formatCurrency, calculateTripSummary } from '@/lib/calculations';
 
 export default function TripDetailPage() {
   const { session, loading } = useRequireAuth();
@@ -71,6 +71,7 @@ export default function TripDetailPage() {
   if (!session) return null;
 
   const total = expenses.reduce((s, e) => s + e.amount, 0);
+  const { memberBalances } = calculateTripSummary(expenses, members);
   const recentExpenses = [...expenses].sort((a, b) =>
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   ).slice(0, 3);
@@ -102,24 +103,18 @@ export default function TripDetailPage() {
           </div>
 
           {/* Quick stats */}
-          <div className="stat-grid" style={{ marginBottom: 24 }}>
+          <div className="stat-grid" style={{ marginBottom: 24, gridTemplateColumns: 'repeat(1fr)' }}>
             <div className="stat-card">
-              <div className="stat-card__label">Total Spent</div>
+              <div className="stat-card__label">Total Trip Spent</div>
               <div className="stat-card__value stat-card__value--accent">{formatCurrency(total)}</div>
             </div>
             <div className="stat-card">
-              <div className="stat-card__label">Expenses</div>
+              <div className="stat-card__label">Total Expenses</div>
               <div className="stat-card__value">{expenses.length}</div>
             </div>
             <div className="stat-card">
-              <div className="stat-card__label">Members</div>
+              <div className="stat-card__label">Total Members</div>
               <div className="stat-card__value">{members.length}</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-card__label">Per Person</div>
-              <div className="stat-card__value stat-card__value--success">
-                {members.length > 0 ? formatCurrency(total / members.length) : '₹0'}
-              </div>
             </div>
           </div>
 
@@ -141,36 +136,55 @@ export default function TripDetailPage() {
 
           {/* Members */}
           <div className="section-header">
-            <h2>Members ({members.length})</h2>
-            <Link href={`/trips/${tripId}/add-member`} className="btn btn--ghost btn--sm">+ Add</Link>
+            <h2>Members & Balances</h2>
+            <Link href={`/trips/${tripId}/add-member`} className="btn btn--ghost btn--sm">+ Add Member</Link>
           </div>
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 28 }}>
-            {members.map((m) => (
-              <div
-                key={m.id}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 8,
-                  background: 'var(--bg-card)', border: '1px solid var(--border)',
-                  borderRadius: 99, padding: '6px 14px 6px 8px'
-                }}
-              >
-                <div className="avatar" style={{ width: 26, height: 26, fontSize: '0.75rem' }}>
-                  {m.name.charAt(0).toUpperCase()}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 32 }}>
+            {members.map((m) => {
+              const bal = memberBalances.find(b => b.userId === m.id);
+              const paid = bal?.totalPaid || 0;
+              const share = bal?.totalOwed || 0;
+              return (
+                <div
+                  key={m.id}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 16,
+                    background: 'var(--bg-card)', border: '1px solid var(--border)',
+                    borderRadius: 16, padding: '16px', width: '100%'
+                  }}
+                >
+                  <div className="avatar" style={{ width: 44, height: 44, fontSize: '1.2rem' }}>
+                    {m.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                      <span style={{ fontSize: '1.05rem', fontWeight: 600 }}>{m.name}</span>
+                      {m.id === trip.createdBy && (
+                        <span style={{ fontSize: '0.7rem', color: 'var(--accent)', background: 'var(--bg-elevated)', padding: '2px 8px', borderRadius: 12 }}>creator</span>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', gap: 20, fontSize: '0.88rem' }}>
+                      <div style={{ color: 'var(--text-secondary)' }}>Paid: <span style={{ color: 'var(--text-main)', fontWeight: 500 }}>{formatCurrency(paid)}</span></div>
+                      <div style={{ color: 'var(--text-secondary)' }}>Share: <span style={{ color: 'var(--text-main)', fontWeight: 500 }}>{formatCurrency(share)}</span></div>
+                    </div>
+                  </div>
+                  {m.id !== trip.createdBy && (
+                    <button 
+                      onClick={() => handleRemoveMember(m)}
+                      style={{ 
+                        background: 'var(--bg-elevated)', border: 'none', color: 'var(--danger)', 
+                        width: 36, height: 36, borderRadius: '50%', display: 'flex', 
+                        alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0,
+                        fontSize: '1.2rem', fontWeight: 300
+                      }}
+                      aria-label="Remove member"
+                    >
+                      ×
+                    </button>
+                  )}
                 </div>
-                <span style={{ fontSize: '0.88rem', fontWeight: 600 }}>{m.name}</span>
-                {m.id === trip.createdBy && (
-                  <span style={{ fontSize: '0.7rem', color: 'var(--accent)' }}>creator</span>
-                )}
-                {m.id !== trip.createdBy && (
-                  <button 
-                    onClick={() => handleRemoveMember(m)}
-                    style={{ background: 'transparent', border: 'none', color: 'var(--danger)', fontSize: '0.75rem', cursor: 'pointer', marginLeft: 6, fontWeight: 600 }}
-                  >
-                    ×
-                  </button>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Recent expenses */}
