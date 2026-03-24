@@ -172,12 +172,12 @@ export default function TripDetailPage() {
                       <div style={{ color: 'var(--text-secondary)' }}>Share: <span style={{ color: 'var(--text-main)', fontWeight: 500 }}>{formatCurrency(share)}</span></div>
                     </div>
                   </div>
-                  {m.id !== trip.createdBy && (
-                    <button 
+                  {m.id !== trip.createdBy && session.userId === trip.createdBy && (
+                    <button
                       onClick={() => handleRemoveMember(m)}
-                      style={{ 
-                        background: 'var(--bg-elevated)', border: 'none', color: 'var(--danger)', 
-                        width: 36, height: 36, borderRadius: '50%', display: 'flex', 
+                      style={{
+                        background: 'var(--bg-elevated)', border: 'none', color: 'var(--danger)',
+                        width: 36, height: 36, borderRadius: '50%', display: 'flex',
                         alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0,
                         fontSize: '1.2rem', fontWeight: 300
                       }}
@@ -226,7 +226,7 @@ export default function TripDetailPage() {
             </div>
           )}
 
-          {/* Trip status toggle & Delete */ }
+          {/* Trip status toggle & Delete */}
           {session.userId === trip.createdBy && (
             <div style={{ marginTop: 32, display: 'flex', gap: 12 }}>
               <button
