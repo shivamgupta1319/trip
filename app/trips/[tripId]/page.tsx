@@ -227,21 +227,23 @@ export default function TripDetailPage() {
           )}
 
           {/* Trip status toggle & Delete */ }
-          <div style={{ marginTop: 32, display: 'flex', gap: 12 }}>
-            <button
-              onClick={toggleStatus}
-              className={`btn btn--sm ${trip.status === 'active' ? 'btn--ghost' : 'btn--ghost'}`}
-              style={{ opacity: 0.7 }}
-            >
-              {trip.status === 'active' ? '✅ Mark completed' : '🔄 Reopen trip'}
-            </button>
-            <button
-              onClick={handleDeleteTrip}
-              className="btn btn--sm btn--danger"
-            >
-              🗑️ Delete Trip
-            </button>
-          </div>
+          {session.userId === trip.createdBy && (
+            <div style={{ marginTop: 32, display: 'flex', gap: 12 }}>
+              <button
+                onClick={toggleStatus}
+                className={`btn btn--sm ${trip.status === 'active' ? 'btn--ghost' : 'btn--ghost'}`}
+                style={{ opacity: 0.7 }}
+              >
+                {trip.status === 'active' ? '✅ Mark completed' : '🔄 Reopen trip'}
+              </button>
+              <button
+                onClick={handleDeleteTrip}
+                className="btn btn--sm btn--danger"
+              >
+                🗑️ Delete Trip
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
