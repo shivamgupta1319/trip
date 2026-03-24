@@ -50,7 +50,7 @@ export default function ExpensesPage() {
   if (loading || !trip) return <div className="loading-screen"><div className="spinner" /></div>;
   if (!session) return null;
 
-  const total = expenses.reduce((s, e) => s + e.amount, 0);
+  const total = expenses.filter((e) => e.title !== 'Settlement Payment').reduce((s, e) => s + e.amount, 0);
 
   return (
     <div className="page">
@@ -108,13 +108,13 @@ export default function ExpensesPage() {
                         {new Date(exp.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
                       </div>
                       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                        <Link 
+                        <Link
                           href={`/trips/${tripId}/expenses/${exp.id}/edit`}
                           style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}
                         >
                           Edit
                         </Link>
-                        <button 
+                        <button
                           onClick={() => handleDelete(exp.id, exp.title)}
                           style={{ background: 'transparent', border: 'none', color: 'var(--danger)', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}
                         >
