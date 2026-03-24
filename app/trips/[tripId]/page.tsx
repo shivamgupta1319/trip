@@ -70,9 +70,9 @@ export default function TripDetailPage() {
   if (loading || !trip) return <div className="loading-screen"><div className="spinner" /></div>;
   if (!session) return null;
 
-  const total = expenses.reduce((s, e) => s + e.amount, 0);
-  const { memberBalances } = calculateTripSummary(expenses, members);
-  const recentExpenses = [...expenses].sort((a, b) =>
+  const realExpenses = expenses.filter((e) => e.title !== 'Settlement Payment');
+  const { totalExpenses: total, memberBalances } = calculateTripSummary(expenses, members);
+  const recentExpenses = [...realExpenses].sort((a, b) =>
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   ).slice(0, 3);
 
@@ -110,7 +110,7 @@ export default function TripDetailPage() {
             </div>
             <div className="stat-card">
               <div className="stat-card__label">Total Expenses</div>
-              <div className="stat-card__value">{expenses.length}</div>
+              <div className="stat-card__value">{realExpenses.length}</div>
             </div>
             <div className="stat-card">
               <div className="stat-card__label">Total Members</div>

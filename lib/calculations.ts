@@ -10,24 +10,26 @@ export function calculateTripSummary(
   expenses: Expense[],
   members: User[]
 ): TripSummary {
-  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+  const realExpenses = expenses.filter(e => e.title !== 'Settlement Payment');
+  const settlementExpenses = expenses.filter(e => e.title === 'Settlement Payment');
+
+  const totalExpenses = realExpenses.reduce((sum, e) => sum + e.amount, 0);
 
   // Build balance map
-  const balanceMap: Record<string, { paid: number; owed: number }> = {};
+  const balanceMap: Record<string, { paid: number; owed: number; netSettlements: number }> = {};
   for (const member of members) {
-    balanceMap[member.id] = { paid: 0, owed: 0 };
+    balanceMap[member.id] = { paid: 0, owed: 0, netSettlements: 0 };
   }
 
-  for (const expense of expenses) {
+  // 1. Process real trip expenses for exact share metrics
+  for (const expense of realExpenses) {
     const splitCount = expense.splitAmong.length;
     if (splitCount === 0) continue;
     const perPerson = expense.amount / splitCount;
 
-    // Credit the payer
     if (balanceMap[expense.paidBy]) {
       balanceMap[expense.paidBy].paid += expense.amount;
     }
-    // Debit each person in the split
     for (const uid of expense.splitAmong) {
       if (balanceMap[uid]) {
         balanceMap[uid].owed += perPerson;
@@ -35,14 +37,30 @@ export function calculateTripSummary(
     }
   }
 
+  // 2. Process settlement payments for net balances only
+  for (const expense of settlementExpenses) {
+    const splitCount = expense.splitAmong.length;
+    if (splitCount === 0) continue;
+    const perPerson = expense.amount / splitCount;
+
+    if (balanceMap[expense.paidBy]) {
+      balanceMap[expense.paidBy].netSettlements += expense.amount; // They paid a debt
+    }
+    for (const uid of expense.splitAmong) {
+      if (balanceMap[uid]) {
+        balanceMap[uid].netSettlements -= perPerson; // They received debt payment
+      }
+    }
+  }
+
   const memberBalances: MemberBalance[] = members.map((member) => {
-    const { paid, owed } = balanceMap[member.id] || { paid: 0, owed: 0 };
+    const { paid, owed, netSettlements } = balanceMap[member.id] || { paid: 0, owed: 0, netSettlements: 0 };
     return {
       userId: member.id,
       name: member.name,
       totalPaid: paid,
       totalOwed: owed,
-      netBalance: paid - owed,
+      netBalance: (paid - owed) + netSettlements,
     };
   });
 

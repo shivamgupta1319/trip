@@ -78,7 +78,7 @@ export default function DashboardPage() {
               {(trips || []).map((trip) => {
                 const expenses = expensesMap[trip.id] || [];
                 const members = membersMap[trip.id] || [];
-                const total = expenses.reduce((s, e) => s + e.amount, 0);
+                const total = calculateTripSummary(expenses, members).totalExpenses;
                 return (
                   <Link key={trip.id} href={`/trips/${trip.id}`} className="list-item">
                     <div className="list-item__icon">
