@@ -30,6 +30,7 @@ export default function AddMemberPage() {
     (async () => {
       const t = await getTripById(tripId);
       if (!t) { router.replace('/dashboard'); return; }
+      if (t.createdBy !== session.userId) { router.replace(`/trips/${tripId}`); return; }
       if (!mounted) return;
       setTrip(t);
       const allUsers = await getUsers();

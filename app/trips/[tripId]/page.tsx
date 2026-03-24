@@ -129,15 +129,19 @@ export default function TripDetailPage() {
             <Link href={`/trips/${tripId}/expenses`} className="btn btn--ghost">
               📋 All Expenses
             </Link>
-            <Link href={`/trips/${tripId}/add-member`} className="btn btn--ghost">
-              👤 Add Member
-            </Link>
+            {session.userId === trip.createdBy && (
+              <Link href={`/trips/${tripId}/add-member`} className="btn btn--ghost">
+                👤 Add Member
+              </Link>
+            )}
           </div>
 
           {/* Members */}
           <div className="section-header">
             <h2>Members & Balances</h2>
-            <Link href={`/trips/${tripId}/add-member`} className="btn btn--ghost btn--sm">+ Add Member</Link>
+            {session.userId === trip.createdBy && (
+              <Link href={`/trips/${tripId}/add-member`} className="btn btn--ghost btn--sm">+ Add Member</Link>
+            )}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 32 }}>
             {members.map((m) => {

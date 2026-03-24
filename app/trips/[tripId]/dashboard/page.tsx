@@ -5,8 +5,8 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import { useRequireAuth } from '@/context/AuthContext';
-import { getTripById, getExpensesForTrip, getUsers } from '@/lib/storage';
-import { Trip, User } from '@/lib/types';
+import { getTripById, getExpensesForTrip, getUsers, saveExpense, generateId } from '@/lib/storage';
+import { Trip, User, Settlement } from '@/lib/types';
 import { calculateTripSummary, formatCurrency } from '@/lib/calculations';
 
 export default function TripDashboardPage() {
@@ -40,6 +40,24 @@ export default function TripDashboardPage() {
     })();
     return () => { mounted = false; };
   }, [session, tripId]);
+
+  const handleSettle = async (s: Settlement) => {
+    if (!confirm(`Mark ${formatCurrency(s.amount)} from ${s.fromName} to ${s.toName} as paid?`)) return;
+    const newExpense = {
+      id: generateId(),
+      tripId,
+      title: 'Settlement Payment',
+      amount: s.amount,
+      category: 'other' as const,
+      paidBy: s.from,
+      splitAmong: [s.to],
+      createdAt: new Date().toISOString(),
+    };
+    await saveExpense(newExpense);
+    // Refresh stats smoothly
+    const exps = await getExpensesForTrip(tripId);
+    setSummary(calculateTripSummary(exps, members));
+  };
 
   if (loading || !trip || !summary) return <div className="loading-screen"><div className="spinner" /></div>;
   if (!session) return null;
@@ -129,15 +147,26 @@ export default function TripDashboardPage() {
           ) : (
             <div className="stack">
               {summary.settlements.map((s, i) => (
-                <div className="settlement-card" key={i}>
-                  <div className="avatar">{s.fromName.charAt(0).toUpperCase()}</div>
-                  <div style={{ flex: 1 }}>
-                    <span style={{ fontWeight: 600 }}>{s.fromName}</span>
-                    <span style={{ color: 'var(--text-muted)', margin: '0 8px' }}>→</span>
-                    <span style={{ fontWeight: 600 }}>{s.toName}</span>
+                <div className="settlement-card" key={i} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div className="avatar">{s.fromName.charAt(0).toUpperCase()}</div>
+                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontWeight: 600 }}>{s.fromName}</span>
+                      <span style={{ color: 'var(--text-muted)' }}>→</span>
+                      <span style={{ fontWeight: 600 }}>{s.toName}</span>
+                    </div>
+                    <div className="settlement-card__amount" style={{ fontSize: '1.2rem' }}>
+                      {formatCurrency(s.amount)}
+                    </div>
                   </div>
-                  <div className="settlement-card__amount">
-                    {formatCurrency(s.amount)}
+                  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                    <button 
+                      className="btn btn--sm btn--ghost" 
+                      style={{ color: 'var(--success)', border: '1px solid var(--success)', background: 'transparent' }}
+                      onClick={() => handleSettle(s)}
+                    >
+                      ✓ Mark Paid
+                    </button>
                   </div>
                 </div>
               ))}
